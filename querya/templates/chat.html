@@ -1,0 +1,108 @@
+{% extends 'base.jinja' %}
+
+{% block head %}
+<title>Query</title>
+{[ super() ]}
+{% endblock %}
+
+{% block app %}
+{% include 'app_bar.jinja' %}
+<v-main>
+
+  <!-- 聊天记录 -->
+  <v-container>
+    <div v-for="(item, index) in form.prompts" :key="index">
+      <v-row>
+        <v-col cols="12">
+          <!-- User Content -->
+          <div v-if="item.role === 'user'">
+            <v-card theme="dark" color="indigo" class="float-right" max-width="60%">
+              <v-card-text class="pa-3">
+                <div v-html="marked(item.content)"></div>
+              </v-card-text>
+            </v-card>
+          </div>
+
+          <!-- Assistant Content -->
+          <div v-if="item.role === 'assistant'">
+            <v-card color="indigo-lighten-5" max-width="60%">
+              <v-card-text>
+                <div v-html="marked(item.content)" class="px-3"></div>
+              </v-card-text>
+            </v-card>
+          </div>
+        </v-col>
+      </v-row>
+    </div>
+
+    <!-- loading -->
+    <v-row v-show="loading">
+      <v-col cols="12">
+        <v-card color="indigo-lighten-5" class="float-left" max-width="60%" :loading="loading">
+          <v-card-text class="pa-3">Generating...</v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
+
+  <!-- 聊天表单 -->
+  <v-footer app class="justify-center">
+    <v-container>
+      <v-form ref="chatForm" @submit.prevent>
+        <!-- 文本框和发送按钮 -->
+        <v-row>
+          <!-- prompt -->
+          <v-col>
+            <v-textarea label="Prompt" v-model="form.prompt" :rules="rules.required" clearable counter maxlength=2000
+              no-resize auto-grow rows=1 max-rows=4 prepend-inner-icon="mdi-comment" color="indigo"></v-textarea>
+          </v-col>
+          <!-- button cols="auto"来适应内容宽-->
+          <v-col cols="auto">
+            <v-btn type="submit" @click.stop="send" :loading="loading" :disabled="loading">Send</v-btn>
+          </v-col>
+          <v-col cols="auto">
+            <v-btn @click="clear_prompts">clear</v-btn>
+          </v-col>
+          <!-- expand more -->
+          <v-col cols="auto">
+            <v-btn type="submit" flat :icon="chatFormDrawer ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+              @click.stop="chatFormDrawer = !chatFormDrawer"></v-btn>
+          </v-col>
+        </v-row>
+
+        <!-- 扩展表单内容 -->
+        <v-expand-transition>
+          <v-row v-show="chatFormDrawer">
+            <!-- System Message -->
+            <v-col>
+              <v-textarea v-model="form.systemMessage" label="System Message" rows=1></v-textarea>
+            </v-col>
+            <!-- Temperature -->
+            <v-col>
+              <v-slider label="Temperature" v-model="form.temperature" :min="0" :max="1" :step="0.1"
+                prepend-icon="mdi-school" append-icon="mdi-creation"></v-slider>
+            </v-col>
+            <!-- Add Few-shot Prompting -->
+            <v-col>
+              <v-btn>
+                Few-shot Prompting
+              </v-btn>
+            </v-col>
+          </v-row>
+        </v-expand-transition>
+
+      </v-form>
+    </v-container>
+  </v-footer>
+
+</v-main>
+
+{% endblock %}
+
+{% block script %}
+{[ super() ]}
+<script src="{[ url_for('static',filename='js/axios.js') ]}"></script>
+<script src="{[ url_for('static',filename='js/marked.js') ]}"></script>
+<script src="{[ url_for('static',filename='js/vuetify.min.js') ]}"></script>
+<script src="{[ url_for('static',filename='views/chat.js') ]}"></script>
+{% endblock %}

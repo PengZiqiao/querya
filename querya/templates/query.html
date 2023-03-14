@@ -1,0 +1,141 @@
+{% extends 'base.jinja' %}
+
+{% block head %}
+<title>Query</title>
+{[ super() ]}
+{% endblock %}
+
+{% block app %}
+{% include 'app_bar.jinja' %}
+<v-main>
+
+    <!-- 聊天记录 -->
+    <v-container>
+        <div v-for="(item, index) in chatList" :key="index">
+            <v-row>
+                <v-col cols="12">
+                    <!-- User Content -->
+                    <div v-if="item.role === 'user'">
+                        <v-card theme="dark" color="blue-grey" class="float-right" max-width="60%">
+                            <v-card-text class="pa-3">
+                                <div v-html="marked(item.content)"></div>
+                            </v-card-text>
+                        </v-card>
+                    </div>
+
+                    <!-- Assistant Content -->
+                    <div v-if="item.role === 'assistant'">
+                        <v-card color="blue-grey-lighten-5" class="float-left" max-width="60%">
+                            <v-card-text>
+                                <div v-html="marked(item.content)" class="px-3"></div>
+                            </v-card-text>
+                            <v-divider></v-divider>
+                            <v-card-actions class="pa-3">
+                                <v-btn flat size="x-small" color="blue-grey-lighten-4"
+                                    @click.stop="showSource(index)">Source</v-btn>
+                            </v-card-actions>
+                        </v-card>
+                    </div>
+                </v-col>
+            </v-row>
+        </div>
+        <!-- loading -->
+        <v-row v-show="queryProcessing">
+            <v-col cols="12">
+                <v-card color="blue-grey-lighten-5" class="float-left" max-width="60%" :loading="queryProcessing">
+                    <v-card-text class="pa-3">Querying...</v-card-text>
+                </v-card>
+            </v-col>
+        </v-row>
+    </v-container>
+
+    <!-- 抽屉 -->
+    <v-navigation-drawer v-model="sourceDrawer" location="right" width="600" disable-resize-watcher>
+        <v-container max-height="100vh">
+            <v-btn icon="mdi-arrow-right" flat @click.stop="sourceDrawer = false"></v-btn>
+            <h1 class="ma-4">{{ sourceTitle }}</h1>
+            <div v-html="marked(source)" class="ma-4"></div>
+        </v-container>
+    </v-navigation-drawer>
+
+    <!-- 聊天表单 -->
+    <v-footer app class="justify-center">
+        <v-container>
+            <v-form ref="chatForm" @submit.prevent>
+                <!-- 文本框和发送按钮 -->
+                <v-row>
+                    <!-- prompt -->
+                    <v-col>
+                        <v-textarea label="Prompt" v-model="chatForm.prompt" :rules="rules.required" clearable counter
+                            maxlength=2000 no-resize auto-grow rows=1 max-rows=4 prepend-inner-icon="mdi-comment"
+                            color="blue-grey"></v-textarea>
+                    </v-col>
+                    <!-- button cols="auto"来适应内容宽-->
+                    <v-col cols="auto">
+                        <v-btn type="submit" tonal prepend-icon="mdi-send" @click.stop="query"
+                            :loading="queryProcessing" :disabled="queryProcessing">Send</v-btn>
+                    </v-col>
+                    <!-- expand more -->
+                    <v-col cols="auto">
+                        <v-btn type="submit" flat :icon="chatFormDrawer ? 'mdi-chevron-down' : 'mdi-chevron-up'"
+                            @click.stop="chatFormDrawer = !chatFormDrawer"></v-btn>
+                    </v-col>
+                </v-row>
+
+                <!-- 扩展表单内容 -->
+                <v-expand-transition>
+                    <v-row v-show="chatFormDrawer">
+                        <!-- Response Mode -->
+                        <v-col>
+                            <v-select v-model="chatForm.responseMode" label="Response Mode"
+                                :items="items.responseMode"></v-select>
+                        </v-col>
+                        <!-- Documents -->
+                        <v-col>
+                            <v-select v-model="chatForm.docNames" chips label="Documents" :items="items.docNames"
+                                multiple></v-select>
+                        </v-col>
+                        <!-- Add document -->
+                        <v-col>
+                            <v-btn @click="addDocDialog = true">
+                                add Document
+                            </v-btn>
+                        </v-col>
+                    </v-row>
+                </v-expand-transition>
+
+            </v-form>
+        </v-container>
+    </v-footer>
+
+</v-main>
+
+<!-- 添加文档表单 -->
+<v-dialog v-model="addDocDialog" persistent>
+    <v-container align="center">
+        <v-card title="Add Document" max-width="600" :loading="addDocProcessing">
+            <v-form @submit.prevent>
+                <v-card-text>
+                    <v-text-field v-model="addDocForm.name" label="Document name"
+                        :rules="rules.required"></v-text-field>
+                    <v-textarea v-model="addDocForm.content" label="Document content"
+                        :rules="rules.required"></v-textarea>
+                </v-card-text>
+                <v-card-actions>
+                    <v-btn type="submit" @click.stop="addDoc" :loading="addDocProcessing"
+                        :disabled="addDocProcessing">OK</v-btn>
+                    <v-btn @click="cancelAddDoc">Cancel</v-btn>
+                </v-card-actions>
+            </v-form>
+        </v-card>
+    </v-container>
+</v-dialog>
+{% endblock %}
+
+{% block script %}
+{[ super() ]}
+<script src="{[ url_for('static',filename='js/axios.js') ]}"></script>
+<script src="{[ url_for('static',filename='js/marked.js') ]}"></script>
+<script src="{[ url_for('static',filename='js/vuetify.min.js') ]}"></script>
+<script src="{[ url_for('static',filename='views/query.js') ]}"></script>
+{% endblock %}
