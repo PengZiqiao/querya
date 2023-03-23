@@ -1,0 +1,6 @@
+langchain
+openai
+tiktoken
+google-api-python-client
+pdfminer.six
+chromadb
